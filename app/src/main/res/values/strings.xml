@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">recyclerview_ads</string>
+    <string name="ad_attribution">Ad</string>
+</resources>
