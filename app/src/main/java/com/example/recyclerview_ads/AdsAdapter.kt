@@ -16,13 +16,14 @@ import com.google.android.gms.ads.formats.UnifiedNativeAd
 import com.google.android.gms.ads.formats.UnifiedNativeAdView
 
 class AdsAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val textList: List<Int> = (1..1000).toList()
+    private val textList: List<Int> = (0..50).toList()
     var lastElementPosition: Int = -1
     var firstElementPosition: Int = -1
 
     var unifiedNativeAd: UnifiedNativeAd? = null
 
-    inner class AdsViewHolder(val binding: AdItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class AdsViewHolder(private val binding: AdItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         fun bind() {
             if (unifiedNativeAd != null) {
                 binding.adFrame.visibility = View.VISIBLE
@@ -41,7 +42,7 @@ class AdsAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    inner class TextViewHolder(val binding: TextItemBinding) :
+    inner class TextViewHolder(private val binding: TextItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(text: Int) {
             binding.textView.text = text.toString()
@@ -50,26 +51,39 @@ class AdsAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        return if (viewType == TEXT) {
+        return if (viewType == Type.Text.ordinal) {
             TextViewHolder(TextItemBinding.inflate(layoutInflater, parent, false))
         } else
             AdsViewHolder(AdItemBinding.inflate(layoutInflater, parent, false))
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if ((position % AD_POSITION) + 1 == AD_POSITION) {
+        if (getItemViewType(position) == Type.Ad.ordinal) {
             (holder as AdsViewHolder).bind()
         } else {
-            (holder as TextViewHolder).bind(textList[position])
+            val realPosition = getRealPosition(position)
+            (holder as TextViewHolder).bind(textList[realPosition])
         }
     }
 
-    override fun getItemCount() = textList.size
+    override fun getItemCount(): Int {
+        return if (textList.size > AD_POSITION && textList.isNotEmpty())
+            textList.size + textList.size / AD_POSITION
+        else
+            textList.size
+    }
 
     override fun getItemViewType(position: Int): Int {
-        return if ((position % AD_POSITION) + 1 == AD_POSITION) {
-            AD
-        } else TEXT
+        return if (position > 0 && position % AD_POSITION == 0) {
+            Type.Ad.ordinal
+        } else Type.Text.ordinal
+    }
+
+    private fun getRealPosition(position: Int): Int {
+        return if (position > AD_POSITION - 1)
+            position - (position / AD_POSITION)
+        else
+            position
     }
 
     /** itemToChangedPosition is a total number of item display on the screen*/
@@ -162,12 +176,14 @@ class AdsAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         adView.setNativeAd(nativeAd)
     }
 
-    companion object {
-        const val TEXT = 1
-        const val AD = 2
+    enum class Type {
+        Text,
+        Ad
+    }
 
+    companion object {
         //you can change AD_POSITION to any number you want
-        const val AD_POSITION = 2
+        const val AD_POSITION = 7
         private const val TAG = "AdsAdapter"
     }
 }
